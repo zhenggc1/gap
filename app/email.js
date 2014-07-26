@@ -23,7 +23,7 @@ var transporter = nodemailer.createTransport({
 });
 
 function openInbox(cb) {
-  imap.openBox('INBOX', true, cb);
+  imap.openBox('INBOX', /*readOnly*/false, cb);
 }
 
 function search(keyword) {
@@ -31,56 +31,67 @@ function search(keyword) {
 }
 
 imap.once('ready', function() {
+
   openInbox(function(err, box) {
-    console.log("total :" + box.messages.total);
+
     if (err) throw err;
-    if(cursor == null){
-        cursor = box.messages.total;
-    }
-    var f = imap.seq.fetch(cursor + ":" +box.messages.total, {
-      bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
-      struct: true
-    });
 
-    cursor = box.messages.total;
+    imap.search(['UNSEEN', ['SINCE', 'July 25, 2014']], function(err, results){
+        
+        if (err || results.length === 0){
+            console.log('you are up to date');
+            imap.end();
+            return;
+        }
+       
+        var f = imap.fetch(results, {bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)', struct:true, markSeen:true});
+        
+        f.on('message', function(msg, seqno){
+            msg.on('body', function(stream, info){
+                var buffer = '';
+                stream.on('data', function(chunk){
+                    buffer += chunk.toString('utf8');
+                });
+                stream.once('end', function(){
+                    var header = Imap.parseHeader(buffer);
+                    console.log('received: ' + seqno);
+                    console.log(header['subject']);
+                    transporter.sendMail({
+                        from: configEmail,
+                        to: header['from'],
+                        subject: 'result of ' + header['subject'],
+                        text: search(header['subject'])
+                    });
+                });   
+            });
 
-    f.on('message', function(msg, seqno) {
-      console.log('Message #%d', seqno);
-      var prefix = '(#' + seqno + ') ';
-      msg.on('body', function(stream, info) {
-
-        var buffer = '';
-        stream.on('data', function(chunk) {
-          buffer += chunk.toString('utf8');
         });
-        stream.once('end', function() {
-        console.log(prefix + 'Parsed header: %s', inspect(Imap.parseHeader(buffer)));
-        var header = Imap.parseHeader(buffer);
-          transporter.sendMail({
-              from: configEmail,
-              to: header['from'],
-              subject: 'result of ' + header['subject'],
-              text: search(header['subject'])
-          });
+
+        f.once('error', function(err){
+            console.log('Fetch error: ' + err);
         });
-      });
-    });
-    f.once('error', function(err) {
-      console.log('Fetch error: ' + err);
-    });
-    f.once('end', function() {
-      console.log('Done fetching all messages!');
-      imap.end();
+
+        f.once('end', function(){
+            console.log('Done');
+            imap.end();
+        });
+
     });
   });
 });
 
-imap.once('error', function(err) {
-  console.log(err);
-});
+function touch(request, response){
+    try{
+        imap.connect();
+    }catch(exception){
+        response.writeHead(500);
+        response.write("failed");
+        response.end();
+        return;
+    }
+    response.writeHead(200);
+    response.write('touched');
+    response.end();
+}
 
-imap.once('end', function() {
-  console.log('Connection ended');
-});
-
-imap.connect();
+exports.touch = touch;

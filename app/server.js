@@ -3,9 +3,11 @@ var url = require('url')
 
 var handler = require('./handler.js')
 var weixin = require('./weixin.js')
+var email = require('./email.js')
 
 handler.container = {
-    "/weixin": weixin.search
+    "/weixin": weixin.search,
+    "/email": email.touch
 };
 
 var server = http.createServer(function (request, response){
