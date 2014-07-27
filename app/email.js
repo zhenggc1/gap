@@ -2,7 +2,6 @@ var nodemailer = require('nodemailer')
 var Imap = require('imap')
 var inspect = require('util').inspect
 
-var cursor;
 var configEmail = 'abc@gmail.com';
 var configPassword = '******';
 

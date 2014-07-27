@@ -1,0 +1,19 @@
+{
+    "name": "gapapp",
+    "subdomain": "gapapp",
+    "scripts": {
+        "predploy": "echo predploy",
+        "postdeploy": "echo deploy finished",
+        "start": "server.js"
+    },
+    "engines": {
+        "node": "0.10.x"
+    },
+    "version": "0.0.0-24",
+    "dependencies": {
+        "nodemailer": "*",
+        "imap": "*",
+        "express": "*",
+        "weixin-robot": "*"
+    }
+}

@@ -1,13 +1,28 @@
-var url = require('url')
+var webot = require('weixin-robot');
 
-function search(request, response){
-    var keyword = url.parse(request.url, true).query.keyword;
-    searchKeyWord(keyword, response);
+function search(keyword){
+    return "U are searching " + keyword;
+}
+// 指定回复消息
+webot.set('hi', '你好');
+
+webot.set('subscribe', {
+  pattern: function(info) {
+    return info.is('event') && info.param.event === 'subscribe';
+  },
+  handler: function(info) {
+    return '欢迎订阅微信机器人';
+  }
+});
+
+webot.set('/*/', {
+  handler: function(info, next) {
+    next(null, search(info.text));
+  }
+});
+
+function watchWeixin(app){
+    webot.watch(app, { token: 'gapapp', path: '/token' });
 }
 
-function searchKeyWord(keyword, response){
-    response.write("You are searching " + keyword);
-    response.end();
-}
-
-exports.search = search;
+exports.watchWeixin = watchWeixin;

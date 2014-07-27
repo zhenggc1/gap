@@ -1,23 +1,16 @@
-var http = require('http')
-var url = require('url')
+var express = require('express')
 
-var handler = require('./handler.js')
 var weixin = require('./weixin.js')
 var email = require('./email.js')
 
-handler.container = {
-    "/weixin": weixin.search,
-    "/email": email.touch
-};
 
-var server = http.createServer(function (request, response){
-    
-    console.log(request.url)
+var app = express();
 
-    handler.handle(request, response);
-});
+weixin.watchWeixin(app);
 
-server.listen(8080);
+app.get('/email', email.touch);
 
-console.log('Started\n The server is listening on 8080');
+app.listen(80);
+
+console.log('Started\n The server is listening on 80');
 
